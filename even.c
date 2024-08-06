@@ -3,28 +3,27 @@
 #include <unistd.h>
 #include <signal.h>
 
-void handle_sighup(int sig){
+void handle_sighup(int signum) {
     printf("Ouch!\n");
-    fflush(stdout);
+    fflush(stdout); // Ensure the message is printed immediately
 }
 
-void handle_sigint(int sig){
+void handle_sigint(int signum) {
     printf("Yeah!\n");
-    fflush(stdout);
+    fflush(stdout); 
 }
 
-int main(int argc, char*argv[]){
+int main(int argc, char *argv[]) {
     int n = atoi(argv[1]);
 
-    // print first n even numbers
-    for(int i = 1; i <= n; i++){
-        printf("%d ", 2*i);
-        fflush(stdout);
-        signal(SIGHUP, handle_sighup);
-        signal(SIGINT, handle_sigint);
-        sleep(5);
+    // Set up signal handlers
+    signal(SIGHUP, handle_sighup);
+    signal(SIGINT, handle_sigint);
+
+    for (int i = 0; i < n; i++) {
+        printf("%d\n", i * 2);
+        sleep(5); // Slow down the program to allow for signal testing
     }
 
-    printf("\n");
     return 0;
 }

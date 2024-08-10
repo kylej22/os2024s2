@@ -20,8 +20,20 @@
 #define NV 20           /* max number of command tokens */
 #define NL 100          /* input buffer size */
 #define MAX_PATH 0      /* max directory path */
+#define MAX_BACKGROUND_PROCESSES 10
 char line[NL];          /* command input buffer */
 char lastdir[MAX_PATH]; /* last directory */
+
+/*
+  background process struct
+ */
+struct bg_process {
+    pid_t pid;
+    char command[NL];
+    int finished;
+};
+
+struct bg_process bg_processes[MAX_BACKGROUND_PROCESSES];
 
 /*
   shell prompt
@@ -31,7 +43,7 @@ void prompt(void)
 {
   // fprintf(stdout, "\n msh> ");
   fflush(stdout);
-}
+} 
 
 int exec_cd(char *arg)
 {
@@ -166,14 +178,20 @@ int main(int argk, char *argv[], char *envp[])
       }
       else
       {
-        /*Increment background process count and display */
+        /*In case of background process */
         bg_count++;
         fprintf(stdout, "[%d] %d\n", bg_count, frkRtnVal);
         fflush(stdout);
+        bg_processes[bg_count-1].pid = frkRtnVal;
+        strcpy(bg_processes[bg_count-1].command, v[0]);
+        for (int j = 1; v[j] != NULL; j++) {
+          strcat(bg_processes[bg_count-1].command, " ");
+          strcat(bg_processes[bg_count-1].command, v[j]);
+        }
+        bg_processes[bg_count-1].finished = 0;
       }
       break;
     } /* switch */
   } /* while */
   return 0;
 } /* main */
-

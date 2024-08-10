@@ -17,11 +17,11 @@
 #include <signal.h>
 #include <errno.h>
 
-#define NV 20  /* max number of command tokens */
-#define NL 100 /* input buffer size */
-#define MAX_PATH 0
-char line[NL]; /* command input buffer */
-char lastdir[MAX_PATH];
+#define NV 20           /* max number of command tokens */
+#define NL 100          /* input buffer size */
+#define MAX_PATH 0      /* max directory path */
+char line[NL];          /* command input buffer */
+char lastdir[MAX_PATH]; /* last directory */
 
 /*
   shell prompt
@@ -33,34 +33,46 @@ void prompt(void)
   fflush(stdout);
 }
 
-int exec_cd(char *arg){
+int exec_cd(char *arg)
+{
   char curr[MAX_PATH];
   char path[MAX_PATH];
 
-  if(getcwd(curr, sizeof(curr))){
+  if (getcwd(curr, sizeof(curr)))
+  {
     *curr = '\0';
   }
-  if(arg == NULL){
+  if (arg == NULL)
+  {
     arg = getenv("HOME");
   }
-  if(!strcmp(arg, "-")){
-    if(*lastdir == '\0') {
+  if (!strcmp(arg, "-"))
+  {
+    if (*lastdir == '\0')
+    {
       fprintf(stderr, "No previous directory\n");
       return 1;
     }
     arg = lastdir;
-  } else {
-    if (*arg == '~') {
-      if (arg[1] == '/' || arg[1] == '\0') {
+  }
+  else
+  {
+    if (*arg == '~')
+    {
+      if (arg[1] == '/' || arg[1] == '\0')
+      {
         snprintf(path, sizeof(path), "%s%s", getenv("HOME"), arg + 1);
         arg = path;
-      } else {
+      }
+      else
+      {
         fprintf(stderr, "syntax not supported: %s\n", arg);
         return 1;
       }
     }
   }
-  if(chdir(arg)){
+  if (chdir(arg))
+  {
     fprintf(stderr, "chdir: %s: %s\n", strerror(errno), path);
     return 1;
   }
@@ -77,7 +89,8 @@ int main(int argk, char *argv[], char *envp[])
   int wpid;            /* value returned by wait */
   char *v[NV];         /* array of pointers to command line tokens */
   char *sep = " \t\n"; /* command line token separators    */
-  int i;               /* parse index */
+  int bg_count = 0;               /* count background processes */
+  int i;               /* index into command line token array */
   int background;      /* flag to indicate background execution */
 
   /* prompt for and process one command line at a time  */
@@ -126,10 +139,9 @@ int main(int argk, char *argv[], char *envp[])
 
     /* Check if the last token is "&" to indicate background execution */
     background = 0;
-    if (strcmp(v[i - 1], "&") == 0)
-    {
+    if (i > 1 && strcmp(v[i-1], "&") == 0) {
       background = 1;
-      v[i - 1] = NULL; /* Remove "&" from the tokens */
+      v[i-1] = NULL;
     }
 
     /* fork a child process to exec the command in v[0] */
@@ -140,40 +152,28 @@ int main(int argk, char *argv[], char *envp[])
       perror("fork");
       break;
     case 0: /* code executed only by child process */
-      if (execvp(v[0], v) == -1)
-      {
-        perror("execvp");
-        exit(EXIT_FAILURE); /* Exit child process if execvp fails */
-      }
-      break; /* not necessary, but good practice */
+      execvp(v[0], v);
+      perror("execvp");
+      exit(1);
     default: /* code executed only by parent process */
       if (!background)
       {
-        if ((wpid = wait(0)) == -1)
+        wpid = waitpid(frkRtnVal, NULL, 0);
+        if (wpid == -1)
         {
-          perror("wait");
-        }
-        else
-        {
-          if (WIFEXITED(wpid))
-          {
-            if (WEXITSTATUS(wpid) == EXIT_SUCCESS)
-            {
-              // printf("%s done \n", v[0]); /* Disabled as requested */
-            }
-            else
-            {
-              printf("%s failed \n", v[0]);
-            }
-          }
+          perror("waitpid");
         }
       }
       else
       {
-        printf("Background process started\n");
+        /*Increment background process count and display */
+        bg_count++;
+        fprintf(stdout, "[%d] %d\n", bg_count, frkRtnVal);
+        fflush(stdout);
       }
       break;
     } /* switch */
-  }   /* while */
+  } /* while */
   return 0;
 } /* main */
+

@@ -34,6 +34,27 @@ struct bg_process {
 };
 
 struct bg_process bg_processes[MAX_BACKGROUND_PROCESSES];
+int bg_count = 0;
+
+void check_processes() {
+  if (bg_count == 0) {
+    return;
+  } else {
+    for (int i = 0; i < bg_count; i++) {
+      if (bg_processes[i].finished == 0) {
+        int status;
+        pid_t result = waitpid(bg_processes[i].pid, &status, WNOHANG);
+        if (result == bg_processes[i].pid) {
+          fprintf(stdout, "[%d]+ Done                    %s\n", i+1, bg_processes[i].command);
+          fflush(stdout);
+          bg_processes[i].finished = 1;
+        } else if (result == -1) {
+          perror("waitpid");
+        }
+      }
+    }
+  }
+}
 
 /*
   shell prompt
@@ -101,7 +122,6 @@ int main(int argk, char *argv[], char *envp[])
   int wpid;            /* value returned by wait */
   char *v[NV];         /* array of pointers to command line tokens */
   char *sep = " \t\n"; /* command line token separators    */
-  int bg_count = 0;               /* count background processes */
   int i;               /* index into command line token array */
   int background;      /* flag to indicate background execution */
 
@@ -146,6 +166,7 @@ int main(int argk, char *argv[], char *envp[])
       {
         fprintf(stderr, "cd failed\n");
       }
+      check_processes();
       continue;
     }
 
@@ -175,6 +196,7 @@ int main(int argk, char *argv[], char *envp[])
         {
           perror("waitpid");
         }
+        check_processes();
       }
       else
       {

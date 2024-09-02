@@ -65,6 +65,17 @@ page    selectVictim(int page_number, enum repl  mode )
 {
         page    victim;
         // to do 
+
+		// random algorithm
+		if (mode == random) {
+			int random = rand() % numFrames;
+			victim.pageNo = frames[random].pageNo;
+			victim.modified = frames[random].modified;
+			frames[random].pageNo = page_number;
+			frames[random].modified = 0;
+			return (victim);
+		}
+	
         victim.pageNo = 0;
         victim.modified = 0;
         return (victim) ;

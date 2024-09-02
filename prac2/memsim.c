@@ -6,6 +6,15 @@ typedef struct {
         int pageNo;
         int modified;
 } page;
+
+typedef struct {
+		int pageNo;
+		int modified;
+		int lastUsed;
+} frame;
+
+frame *frames;
+int *pageTable;
 enum    repl { random, fifo, lru, clock};
 int     createMMU( int);
 int     checkInMemory( int ) ;
@@ -15,10 +24,21 @@ const   int pageoffset = 12;            /* Page size is fixed to 4 KB */
 int     numFrames ;
 
 /* Creates the page table structure to record memory allocation */
-int     createMMU (int frames)
+int     createMMU (int numFrames)
 {
 
-        // to do
+    	// to do
+		frame *frames = (frame *)malloc(numFrames * sizeof(frame));
+		if (frames == NULL) {
+			return -1;
+		}
+		
+		for (int i = 0; i < numFrames; i++) {
+			frames[i].pageNo = -1;
+			frames[i].modified = 0;
+			frames[i].lastUsed = 0;
+		}
+
 
         return 0;
 }

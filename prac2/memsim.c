@@ -85,7 +85,22 @@ page selectVictim(int page_number, enum repl mode) {
     frames[index].modified = 0;
     return (victim);
   }
-  
+  // clock algorithm
+  if (mode == clock) {
+    // assume clock hand is at 0
+    int i = 0;
+    while (1) {
+      if (frames[i].lastUsed == 0) {
+        victim.pageNo = frames[i].pageNo;
+        victim.modified = frames[i].modified;
+        frames[i].pageNo = page_number;
+        frames[i].modified = 0;
+        return (victim);
+      }
+      frames[i].lastUsed = 0;
+      i = (i + 1) % numFrames;
+    }
+  }
   victim.pageNo = 0;
   victim.modified = 0;
   return (victim);

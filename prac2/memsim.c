@@ -28,7 +28,7 @@ int     createMMU (int numFrames)
 {
 
     	// to do
-		frame *frames = (frame *)malloc(numFrames * sizeof(frame));
+		frames = (frame *)malloc(numFrames * sizeof(frame));
 		if (frames == NULL) {
 			return -1;
 		}
@@ -38,7 +38,6 @@ int     createMMU (int numFrames)
 			frames[i].modified = 0;
 			frames[i].lastUsed = 0;
 		}
-
 
         return 0;
 }

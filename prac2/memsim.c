@@ -101,6 +101,22 @@ page selectVictim(int page_number, enum repl mode) {
       i = (i + 1) % numFrames;
     }
   }
+  // fifo algorithm
+  if (mode == fifo) {
+    int min = frames[0].lastUsed;
+    int index = 0;
+    for (int i = 1; i < numFrames; i++) {
+      if (frames[i].lastUsed < min) {
+        min = frames[i].lastUsed;
+        index = i;
+      }
+    }
+    victim.pageNo = frames[index].pageNo;
+    victim.modified = frames[index].modified;
+    frames[index].pageNo = page_number;
+    frames[index].modified = 0;
+    return (victim);
+  }
   victim.pageNo = 0;
   victim.modified = 0;
   return (victim);

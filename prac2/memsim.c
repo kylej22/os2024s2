@@ -80,7 +80,7 @@ int allocateFrame(int page_number)
     if (frames[i].pageNo == -1)
     {
       frames[i].pageNo = page_number;
-      frames[i].modified = 1;
+      frames[i].modified = 0;
       frames[i].lastUsed = currentTime++; // Initialize lastUsed
       return i;
     }
@@ -140,7 +140,7 @@ page selectVictim(int page_number, enum repl mode)
         victim.pageNo = frames[clockHand].pageNo;
         victim.modified = frames[clockHand].modified;
         frames[clockHand].pageNo = page_number;
-        frames[clockHand].modified = 1;
+        frames[clockHand].modified = 0;
         frames[clockHand].lastUsed = currentTime++; // Update lastUsed
         clockHand = (clockHand + 1) % numFrames;
         return victim;
@@ -159,7 +159,7 @@ page selectVictim(int page_number, enum repl mode)
     victim.pageNo = frames[fifoIndex].pageNo;
     victim.modified = frames[fifoIndex].modified;
     frames[fifoIndex].pageNo = page_number;
-    frames[fifoIndex].modified = 1;
+    frames[fifoIndex].modified = 0;
     frames[fifoIndex].lastUsed = currentTime++; // Update lastUsed
     fifoIndex = (fifoIndex + 1) % numFrames;
     return victim;
@@ -281,6 +281,7 @@ int main(int argc, char *argv[])
     else if (rw == 'W')
     {
       // mark page in page table as written - modified
+      frames[frame_no].modified = 1;
       if (debugmode)
         printf("writing   %8d \n", page_number);
     }

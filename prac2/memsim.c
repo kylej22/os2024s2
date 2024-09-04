@@ -23,35 +23,57 @@ const int pageoffset = 12; /* Page size is fixed to 4 KB */
 int numFrames;
 
 /* Creates the page table structure to record memory allocation */
-int createMMU(int numFrames) {
-  // to do
-  frames = (frame *)malloc(numFrames * sizeof(frame));
-  if (frames == NULL) {
-    return -1;
-  }
+int     createMMU (int numFrames)
+{
 
-  for (int i = 0; i < numFrames; i++) {
-    frames[i].pageNo = -1;
-    frames[i].modified = 0;
-    frames[i].lastUsed = 0;
-  }
+    // to do
+	frames = (frame *)malloc(numFrames * sizeof(frame));
+	if (frames == NULL) {
+		return -1;
+	}
+		
+	for (int i = 0; i < numFrames; i++) {
+		frames[i].pageNo = -1;
+		frames[i].modified = 0;
+		frames[i].lastUsed = 0;
+	}
 
-  return 0;
+    return 0;
 }
 
 /* Checks for residency: returns frame no or -1 if not found */
-int checkInMemory(int page_number) {
-  int result = -1;
+int     checkInMemory( int page_number)
+{
+    int     result = -1;
 
-  // to do
+    // to do
+    for (int i = 0; i < numFrames; i++) {
+		if (frames[i].pageNo == page_number) {
+			result = i;  
+			break;  
+		}
+	}
 
-  return result;
+    return result ;
 }
 
 /* allocate page to the next free frame and record where it put it */
-int allocateFrame(int page_number) {
-  // to do
-  return;
+int     allocateFrame( int page_number)
+{
+    int frameIndex = -1;  // Initialize frameIndex to -1 (no free frame)
+
+    // to do
+    for (int i = 0; i < numFrames; i++) {
+        if (frames[i].pageNo == -1) { 
+            frames[i].pageNo = page_number;  
+            frames[i].modified = 0; 
+            frames[i].lastUsed = 0;  
+            frameIndex = i;  
+            break; 
+        }
+    }
+
+    return frameIndex;
 }
 
 /* Selects a victim for eviction/discard according to the replacement algorithm,

@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 typedef struct {
   int pageNo;
@@ -78,6 +80,8 @@ int allocateFrame(int page_number) {
  * returns chosen frame_no  */
 page selectVictim(int page_number, enum repl mode) {
   page victim;
+  // to do
+
   // random algorithm
   if (mode == randomAlg) {
     int randomIndex = rand() % numFrames;
@@ -140,7 +144,7 @@ page selectVictim(int page_number, enum repl mode) {
   return (victim);
 }
 
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   char *tracename;
   int page_number, frame_no, done;
   int do_line, i;
@@ -246,4 +250,6 @@ main(int argc, char *argv[]) {
   printf("total disk reads:     %d\n", disk_reads);
   printf("total disk writes:    %d\n", disk_writes);
   printf("page fault rate:      %.4f\n", (float)disk_reads / no_events);
+
+  return 0;
 }

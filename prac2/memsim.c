@@ -3,12 +3,14 @@
 #include <string.h>
 #include <time.h>
 
-typedef struct {
+typedef struct
+{
   int pageNo;
   int modified;
 } page;
 
-typedef struct {
+typedef struct
+{
   int pageNo;
   int modified;
   int lastUsed;
@@ -16,7 +18,13 @@ typedef struct {
 
 frame *frames;
 int *pageTable;
-enum repl { randomAlg, fifo, lru, clockAlg };
+enum repl
+{
+  randomAlg,
+  fifo,
+  lru,
+  clockAlg
+};
 int createMMU(int);
 int checkInMemory(int);
 int allocateFrame(int);
@@ -25,16 +33,19 @@ const int pageoffset = 12; /* Page size is fixed to 4 KB */
 int numFrames;
 int fifoIndex = 0;
 int clockHand = 0;
+int currentTime = 0;
 
 /* Creates the page table structure to record memory allocation */
-int createMMU(int numFrames) {
-  // to do
+int createMMU(int numFrames)
+{
   frames = (frame *)malloc(numFrames * sizeof(frame));
-  if (frames == NULL) {
+  if (frames == NULL)
+  {
     return -1;
   }
 
-  for (int i = 0; i < numFrames; i++) {
+  for (int i = 0; i < numFrames; i++)
+  {
     frames[i].pageNo = -1;
     frames[i].modified = 0;
     frames[i].lastUsed = 0;
@@ -44,13 +55,16 @@ int createMMU(int numFrames) {
 }
 
 /* Checks for residency: returns frame no or -1 if not found */
-int checkInMemory(int page_number) {
+int checkInMemory(int page_number)
+{
   int result = -1;
 
-  // to do
-  for (int i = 0; i < numFrames; i++) {
-    if (frames[i].pageNo == page_number) {
+  for (int i = 0; i < numFrames; i++)
+  {
+    if (frames[i].pageNo == page_number)
+    {
       result = i;
+      frames[i].lastUsed = currentTime++; // Update lastUsed on access
       break;
     }
   }
@@ -59,100 +73,105 @@ int checkInMemory(int page_number) {
 }
 
 /* allocate page to the next free frame and record where it put it */
-int allocateFrame(int page_number) {
-  int frameIndex = -1;  // Initialize frameIndex to -1 (no free frame)
-
-  // to do
-  for (int i = 0; i < numFrames; i++) {
-    if (frames[i].pageNo == -1) {
+int allocateFrame(int page_number)
+{
+  for (int i = 0; i < numFrames; i++)
+  {
+    if (frames[i].pageNo == -1)
+    {
       frames[i].pageNo = page_number;
       frames[i].modified = 0;
-      frames[i].lastUsed = 0;
-      frameIndex = i;
-      break;
+      frames[i].lastUsed = currentTime++; // Initialize lastUsed
+      return i;
     }
   }
-
-  return frameIndex;
+  return -1; // No free frame available
 }
 
-/* Selects a victim for eviction/discard according to the replacement algorithm,
- * returns chosen frame_no  */
-page selectVictim(int page_number, enum repl mode) {
+/* Selects a victim for eviction/discard according to the replacement algorithm,  returns chosen frame_no  */
+page selectVictim(int page_number, enum repl mode)
+{
   page victim;
-  // to do
 
   // random algorithm
-  if (mode == randomAlg) {
-    int randomIndex = rand() % numFrames;  // randomize the index for victim
+  if (mode == randomAlg)
+  {
+    int randomIndex = rand() % numFrames;
     victim.pageNo = frames[randomIndex].pageNo;
     victim.modified = frames[randomIndex].modified;
     frames[randomIndex].pageNo = page_number;
     frames[randomIndex].modified = 0;
-    return (victim);
+    frames[randomIndex].lastUsed = currentTime++; // Update lastUsed
+    return victim;
   }
 
   // least recently used algorithm
-  if (mode == lru) {
+  if (mode == lru)
+  {
     int min = frames[0].lastUsed;
     int index = 0;
 
-    // find the least recently used frame
-    for (int i = 1; i < numFrames; i++) {
-      if (frames[i].lastUsed < min) {
+    for (int i = 1; i < numFrames; i++)
+    {
+      if (frames[i].lastUsed < min)
+      {
         min = frames[i].lastUsed;
         index = i;
       }
     }
-    // select the victim
+
     victim.pageNo = frames[index].pageNo;
     victim.modified = frames[index].modified;
 
-    // update the new frame
     frames[index].pageNo = page_number;
     frames[index].modified = 0;
-    // update last used for new frame
-    frames[index].lastUsed = 0;
+    frames[index].lastUsed = currentTime++;
 
-    return (victim);
+    return victim;
   }
+
   // clock algorithm
-  if (mode == clockAlg) {
-    // find the frame that is not used
-    while (1) {
-      if (frames[clockHand].lastUsed == 0) {
-        // select the victim
+  if (mode == clockAlg)
+  {
+    while (1)
+    {
+      if (frames[clockHand].lastUsed == 0)
+      {
         victim.pageNo = frames[clockHand].pageNo;
         victim.modified = frames[clockHand].modified;
-        // update the new frame
         frames[clockHand].pageNo = page_number;
         frames[clockHand].modified = 0;
+        frames[clockHand].lastUsed = currentTime++; // Update lastUsed
         clockHand = (clockHand + 1) % numFrames;
-        return (victim);
-      } else {
-        // update the last used for the frame
-        frames[clockHand].lastUsed = 0;
+        return victim;
+      }
+      else
+      {
+        frames[clockHand].lastUsed = 0; // Reset lastUsed as part of the clock algorithm
         clockHand = (clockHand + 1) % numFrames;
       }
     }
   }
+
   // fifo algorithm
-  if (mode == fifo) {
+  if (mode == fifo)
+  {
     victim.pageNo = frames[fifoIndex].pageNo;
     victim.modified = frames[fifoIndex].modified;
     frames[fifoIndex].pageNo = page_number;
     frames[fifoIndex].modified = 0;
-    fifoIndex =
-        (fifoIndex + 1) % numFrames;  // update the fifo index for next victim
-    return (victim);
+    frames[fifoIndex].lastUsed = currentTime++; // Update lastUsed
+    fifoIndex = (fifoIndex + 1) % numFrames;
+    return victim;
   }
 
   victim.pageNo = 0;
   victim.modified = 0;
-  return (victim);
+  return victim;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   char *tracename;
   int page_number, frame_no, done;
   int do_line, i;
@@ -166,19 +185,24 @@ int main(int argc, char *argv[]) {
   page Pvictim;
   FILE *trace;
 
-  if (argc < 5) {
+  if (argc < 5)
+  {
     printf(
         "Usage: ./memsim inputfile numberframes replacementmode debugmode \n");
     exit(-1);
-  } else {
+  }
+  else
+  {
     tracename = argv[1];
     trace = fopen(tracename, "r");
-    if (trace == NULL) {
+    if (trace == NULL)
+    {
       printf("Cannot open trace file %s \n", tracename);
       exit(-1);
     }
     numFrames = atoi(argv[2]);
-    if (numFrames < 1) {
+    if (numFrames < 1)
+    {
       printf("Frame number must be at least 1\n");
       exit(-1);
     }
@@ -190,7 +214,8 @@ int main(int argc, char *argv[]) {
       replace = clockAlg;
     else if (strcmp(argv[3], "fifo\0") == 0)
       replace = fifo;
-    else {
+    else
+    {
       printf("Replacement algorithm must be rand/fifo/lru/clock  \n");
       exit(-1);
     }
@@ -199,14 +224,16 @@ int main(int argc, char *argv[]) {
       debugmode = 0;
     else if (strcmp(argv[4], "debug\0") == 0)
       debugmode = 1;
-    else {
+    else
+    {
       printf("Replacement algorithm must be quiet/debug  \n");
       exit(-1);
     }
   }
 
   done = createMMU(numFrames);
-  if (done == -1) {
+  if (done == -1)
+  {
     printf("Cannot create MMU");
     exit(-1);
   }
@@ -215,18 +242,23 @@ int main(int argc, char *argv[]) {
   disk_reads = 0;
 
   do_line = fscanf(trace, "%x %c", &address, &rw);
-  while (do_line == 2) {
+  while (do_line == 2)
+  {
     page_number = address >> pageoffset;
     frame_no = checkInMemory(page_number); /* ask for physical address */
 
-    if (frame_no == -1) {
+    if (frame_no == -1)
+    {
       disk_reads++; /* Page fault, need to load it into memory */
-      if (debugmode) printf("Page fault %8d \n", page_number);
+      if (debugmode)
+        printf("Page fault %8d \n", page_number);
       if (allocated < numFrames) /* allocate it to an empty frame */
       {
         frame_no = allocateFrame(page_number);
         allocated++;
-      } else {
+      }
+      else
+      {
         Pvictim = selectVictim(page_number,
                                replace); /* returns page number of the victim */
         frame_no = checkInMemory(
@@ -234,17 +266,26 @@ int main(int argc, char *argv[]) {
         if (Pvictim.modified) /* need to know victim page and modified  */
         {
           disk_writes++;
-          if (debugmode) printf("Disk write %8d \n", Pvictim.pageNo);
-        } else if (debugmode)
+          if (debugmode)
+            printf("Disk write %8d \n", Pvictim.pageNo);
+        }
+        else if (debugmode)
           printf("Discard    %8d \n", Pvictim.pageNo);
       }
     }
-    if (rw == 'R') {
-      if (debugmode) printf("reading    %8d \n", page_number);
-    } else if (rw == 'W') {
+    if (rw == 'R')
+    {
+      if (debugmode)
+        printf("reading    %8d \n", page_number);
+    }
+    else if (rw == 'W')
+    {
       // mark page in page table as written - modified
-      if (debugmode) printf("writting   %8d \n", page_number);
-    } else {
+      if (debugmode)
+        printf("writing   %8d \n", page_number);
+    }
+    else
+    {
       printf("Badly formatted file. Error on line %d\n", no_events + 1);
       exit(-1);
     }

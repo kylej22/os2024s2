@@ -84,7 +84,7 @@ page selectVictim(int page_number, enum repl mode) {
 
   // random algorithm
   if (mode == randomAlg) {
-    int randomIndex = rand() % numFrames;
+    int randomIndex = rand() % numFrames;  // randomize the index for victim
     victim.pageNo = frames[randomIndex].pageNo;
     victim.modified = frames[randomIndex].modified;
     frames[randomIndex].pageNo = page_number;
@@ -104,8 +104,11 @@ page selectVictim(int page_number, enum repl mode) {
         index = i;
       }
     }
+    // select the victim
     victim.pageNo = frames[index].pageNo;
     victim.modified = frames[index].modified;
+
+    // update the new frame
     frames[index].pageNo = page_number;
     frames[index].modified = 0;
     // update last used for new frame
@@ -115,15 +118,19 @@ page selectVictim(int page_number, enum repl mode) {
   }
   // clock algorithm
   if (mode == clockAlg) {
+    // find the frame that is not used
     while (1) {
       if (frames[clockHand].lastUsed == 0) {
+        // select the victim
         victim.pageNo = frames[clockHand].pageNo;
         victim.modified = frames[clockHand].modified;
+        // update the new frame
         frames[clockHand].pageNo = page_number;
         frames[clockHand].modified = 0;
         clockHand = (clockHand + 1) % numFrames;
         return (victim);
       } else {
+        // update the last used for the frame
         frames[clockHand].lastUsed = 0;
         clockHand = (clockHand + 1) % numFrames;
       }
@@ -135,7 +142,8 @@ page selectVictim(int page_number, enum repl mode) {
     victim.modified = frames[fifoIndex].modified;
     frames[fifoIndex].pageNo = page_number;
     frames[fifoIndex].modified = 0;
-    fifoIndex = (fifoIndex + 1) % numFrames;
+    fifoIndex =
+        (fifoIndex + 1) % numFrames;  // update the fifo index for next victim
     return (victim);
   }
 

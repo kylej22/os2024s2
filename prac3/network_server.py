@@ -89,18 +89,24 @@ class NetworkServer:
         sel.register(conn, selectors.EVENT_READ, data=None)
         
         try:
+            first_line = True
+            book = None
+            
             while True:
                 events = sel.select(timeout=1)
                 for key, mask in events:
-                    
                     if key.fileobj is conn:
                         data = conn.recv(1024).decode('utf-8')
                     
                         if data:
-                            book, line = data.split(':', 1)
-                            print(f'Received data for book {book}: {line}')
-                            with shared_data_lock:
-                                self.linked_list.append(line, book)
+                            if first_line:
+                                book = data
+                                print(f'Received book: {book}')
+                                first_line = False
+                            else:
+                                print(f'Received line: {data}')
+                                with shared_data_lock:
+                                    self.linked_list.append(data, book)
                         else:
                             print(f'Connection closed by {addr}')
                             sel.unregister(conn)

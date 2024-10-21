@@ -1,6 +1,8 @@
 import socket
 import threading
 import selectors
+import signal
+import sys
 
 HOST = 'localhost'
 PORT = 12345
@@ -72,18 +74,24 @@ class LinkedList:
 
 class NetworkServer:
     def __init__(self):
+        self.host = HOST
+        self.port = PORT
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind((HOST, PORT))
-        self.sock.listen()
+        self.sock.listen(5)
+        self.connections_count = 0
+        self.lock = threading.Lock()
+        self.threads = []
         print(f'Server listening on {HOST}:{PORT}')
         
         self.linked_list = LinkedList()
         self.connections_count = 0
         
     def handle_client(self, conn, addr):
-        self.connections_count += 1
-        order = self.connections_count
+        with shared_data_lock:
+            self.connections_count += 1
+            order = self.connections_count
         print(f'New connection from {addr} connect as connection number {order}')
         conn.setblocking(False)
         sel.register(conn, selectors.EVENT_READ, data=None)
@@ -96,25 +104,28 @@ class NetworkServer:
                 events = sel.select(timeout=1)
                 for key, mask in events:
                     if key.fileobj is conn:
-                        data = conn.recv(1024).decode('utf-8')
+                        try:
+                            data = conn.recv(1024).decode('utf-8')
                     
-                        if data:
-                            if first_line:
-                                book = data
-                                print(f'Received book: {book}')
-                                first_line = False
+                            if data:
+                                if first_line:
+                                    book = data.strip()
+                                    print(f'Received book: {book}')
+                                    first_line = False
+                                else:
+                                    print(f'Received line: {data.strip()}')
+                                    with shared_data_lock:
+                                        self.linked_list.append(data.strip(), book)
                             else:
-                                print(f'Received line: {data}')
-                                with shared_data_lock:
-                                    self.linked_list.append(data, book)
-                        else:
-                            print(f'Connection closed by {addr}')
-                            sel.unregister(conn)
-                            conn.close()
+                                print(f'Connection closed by {addr}')
+                                sel.unregister(conn)
+                                conn.close()
                             
-                            filename = f'book_{order}.txt'
-                            self.linked_list.save_to_file(book, filename)
-                            return
+                                filename = f'book_{order:02}.txt'
+                                self.linked_list.save_to_file(book, filename)
+                                return
+                        except BlockingIOError:
+                            continue
         except ConnectionResetError as e:
             print(f'Connection closed by {addr}')
             sel.unregister(conn)
@@ -125,8 +136,20 @@ class NetworkServer:
             conn, addr = self.sock.accept()
             
             client_thread = threading.Thread(target=self.handle_client, args=(conn, addr))
+            self.threads.append(client_thread)
             client_thread.start()
             print(f'Active threads: {threading.active_count() - 1}')
+    
+    def stop(self):
+        print("\nShutting down server...")
+        self.sock.close()
+        for thread in self.threads:
+            thread.join()
+        print("Server shut down.")
+        
+    def signal_handler(self, sig, frame):
+        self.stop()
+        sys.exit(0)
             
 
 if __name__ == '__main__':

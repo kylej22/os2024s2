@@ -70,7 +70,6 @@ class LinkedList:
                     current = current.book_next
             print(f'Book {book} saved to {filename}')
                       
-
 class NetworkServer:
     def __init__(self, port):
         self.host = HOST
@@ -92,14 +91,19 @@ class NetworkServer:
             self.connections_count += 1
             order = self.connections_count
         print(f'New connection from {addr} connect as connection number {order}')
+        
         conn.setblocking(False)
         sel.register(conn, selectors.EVENT_READ, data=None)
         
+        # buffer to hold received data
+        buffer = []
+        first_line = True
+        book = None
+        
         try:
-            first_line = True
-            book = None
             
             while True:
+                
                 events = sel.select(timeout=1)
                 for key, mask in events:
                     if key.fileobj is conn:
@@ -107,14 +111,13 @@ class NetworkServer:
                             data = conn.recv(1024).decode('utf-8')
                     
                             if data:
+                                buffer.append(data)
                                 if first_line:
                                     book = data.strip()
-                                    print(f'Received book: {book}')
+                                    print(f'Received Book: {book}')
                                     first_line = False
                                 else:
-                                    print(f'Received line: {data.strip()}')
-                                    with shared_data_lock:
-                                        self.linked_list.append(data.strip(), book)
+                                    self.process_data(data.strip(), book)
                             else:
                                 print(f'Connection closed by {addr}')
                                 sel.unregister(conn)
@@ -129,6 +132,13 @@ class NetworkServer:
             print(f'Connection closed by {addr}')
             sel.unregister(conn)
             conn.close()
+    
+    def process_data(self, line, book):
+        
+        with shared_data_lock:
+            self.linked_list.append(line, book)
+        
+        print(f'Added data: {line}')
             
     def run(self):
         while True:

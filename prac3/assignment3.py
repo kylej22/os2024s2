@@ -77,20 +77,16 @@ class NetworkServer:
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((HOST, port))
-        self.sock.listen(5)
-        self.connections_count = 0
-        self.lock = threading.Lock()
-        self.threads = []
-        print(f'Server listening on {HOST}:{port}')
+        self.sock.bind((HOST, PORT))
+        self.sock.listen()
+        print(f'Server listening on {HOST}:{PORT}')
         
         self.linked_list = LinkedList()
         self.connections_count = 0
         
     def handle_client(self, conn, addr):
-        with shared_data_lock:
-            self.connections_count += 1
-            order = self.connections_count
+        self.connections_count += 1
+        order = self.connections_count
         print(f'New connection from {addr} connect as connection number {order}')
         
         conn.setblocking(False)
@@ -108,27 +104,25 @@ class NetworkServer:
                 events = sel.select(timeout=1)
                 for key, mask in events:
                     if key.fileobj is conn:
-                        try:
-                            data = conn.recv(1024).decode('utf-8')
+                        data = conn.recv(1024).decode('utf-8')
                     
-                            if data:
-                                buffer.append(data)
-                                if first_line:
-                                    book = data.strip()
-                                    print(f'Received Book: {book}')
-                                    first_line = False
-                                else:
-                                    self.process_data(data.strip(), book)
+                        if data:
+                            if first_line:
+                                book = data
+                                print(f'Received book: {book}')
+                                first_line = False
                             else:
-                                print(f'Connection closed by {addr}')
-                                sel.unregister(conn)
-                                conn.close()
+                                print(f'Received line: {data}')
+                                with shared_data_lock:
+                                    self.linked_list.append(data, book)
+                        else:
+                            print(f'Connection closed by {addr}')
+                            sel.unregister(conn)
+                            conn.close()
                             
-                                filename = f'book_{order:02}.txt'
-                                self.linked_list.save_to_file(book, filename)
-                                return
-                        except BlockingIOError:
-                            continue
+                            filename = f'book_{order}.txt'
+                            self.linked_list.save_to_file(book, filename)
+                            return
         except ConnectionResetError as e:
             print(f'Connection closed by {addr}')
             sel.unregister(conn)
@@ -146,20 +140,8 @@ class NetworkServer:
             conn, addr = self.sock.accept()
             
             client_thread = threading.Thread(target=self.handle_client, args=(conn, addr))
-            self.threads.append(client_thread)
             client_thread.start()
             print(f'Active threads: {threading.active_count() - 1}')
-    
-    def stop(self):
-        print("\nShutting down server...")
-        self.sock.close()
-        for thread in self.threads:
-            thread.join()
-        print("Server shut down.")
-        
-    def signal_handler(self, sig, frame):
-        self.stop()
-        sys.exit(0)
             
 
 if __name__ == '__main__':

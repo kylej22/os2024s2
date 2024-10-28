@@ -2,6 +2,7 @@ import socket
 import threading
 import selectors
 import signal
+import argparse
 import sys
 
 HOST = 'localhost'
@@ -162,7 +163,10 @@ class NetworkServer:
             
 
 if __name__ == '__main__':
-    listen_port = int(input('Enter port number: '))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', dest="port", type=int, default=5555)
+    args = parser.parse_args()
+    listen_port = args.port
     server = NetworkServer(listen_port)
     
     try:

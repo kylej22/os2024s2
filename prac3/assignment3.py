@@ -149,12 +149,7 @@ class NetworkServer:
     def signal_handler(self, sig, frame):
         self.stop()
         sys.exit(0)
-            
-
-if __name__ == '__main__':
-    server = NetworkServer()
-    server.run()
-            
+                        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

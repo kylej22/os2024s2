@@ -164,7 +164,8 @@ class NetworkServer:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', dest="port", type=int, default=5555)
+    parser.add_argument('-l', dest="port", type=int, default=1234)
+    parser.add_argument('-o', '--other', type=str)
     args = parser.parse_args()
     listen_port = args.port
     server = NetworkServer(listen_port)

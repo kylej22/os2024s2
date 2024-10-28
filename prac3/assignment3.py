@@ -84,8 +84,35 @@ class LinkedList:
                     current = current.book_next
                 frequency[book] = count
             return frequency
-                      
+        
+    def print_book(self, book):
+        with shared_data_lock:
+            if book not in self.book_heads:
+                return 'Book not found'
+            
+            current = self.book_heads[book]
+            book_data = []
 
+            while current:
+                book_data.append(current.data)
+                current = current.book_next
+            
+            print(f'Book: {book}')
+            for data in book_data:
+                print(data)
+                
+    def save_to_file(self, book, filename):
+        with shared_data_lock:
+            if book not in self.book_heads:
+                return 'Book not found'
+            
+            current = self.book_heads[book]
+            with open(filename, 'w') as f:
+                while current:
+                    f.write(current.data + '\n')
+                    current = current.book_next
+            print(f'Book {book} saved to {filename}')
+                      
 class NetworkServer:
     """Server class to handle client connections and data analysis for search patterns."""
 

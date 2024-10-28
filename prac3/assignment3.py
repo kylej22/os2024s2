@@ -5,7 +5,6 @@ import argparse
 import sys
 
 HOST = 'localhost'
-PORT = 12345
 
 shared_data = []
 shared_data_lock = threading.Lock()
@@ -73,17 +72,17 @@ class LinkedList:
                       
 
 class NetworkServer:
-    def __init__(self):
+    def __init__(self, port):
         self.host = HOST
-        self.port = PORT
+        self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((HOST, PORT))
+        self.sock.bind((HOST, port))
         self.sock.listen(5)
         self.connections_count = 0
         self.lock = threading.Lock()
         self.threads = []
-        print(f'Server listening on {HOST}:{PORT}')
+        print(f'Server listening on {HOST}:{port}')
         
         self.linked_list = LinkedList()
         self.connections_count = 0
